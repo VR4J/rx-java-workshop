@@ -4,7 +4,7 @@ import com.workshop.rxjava.weather.model.WeatherCondition;
 import com.workshop.rxjava.weather.services.OpenWeatherMapService;
 import com.workshop.rxjava.weather.services.YahooWeatherService;
 import io.reactivex.Single;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import io.reactivex.schedulers.Schedulers;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,8 +23,21 @@ public class WeatherStation {
         yahooWeather = new YahooWeatherService();
     }
 
+    public Single<WeatherCondition> getCombinedWeatherReportRxAsync(String city){
+        Single<WeatherCondition> ywSingle = Single.fromCallable(() -> yahooWeather.getWeather(city))
+                .subscribeOn(Schedulers.io());
+
+        Single<WeatherCondition> owSingle = Single.fromCallable(() -> openWeatherMap.getWeather(city))
+                .subscribeOn(Schedulers.io());
+
+        return Single.zip(owSingle, ywSingle, this::combineWeatherConditions);
+    }
+
     public Single<WeatherCondition> getCombinedWeatherReportRx(String city){
-        throw new NotImplementedException();
+        Single<WeatherCondition> ywSingle = Single.fromCallable(() -> yahooWeather.getWeather(city));
+        Single<WeatherCondition> owSingle = Single.fromCallable(() -> openWeatherMap.getWeather(city));
+
+        return Single.zip(owSingle, ywSingle, this::combineWeatherConditions);
     }
 
     public WeatherCondition getCombinedWeatherReportAsync(String city) throws InterruptedException {
